@@ -1,66 +1,41 @@
 package com.fighting
 
-import io.ktor.http.*
-import io.ktor.resources.*
-import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
-import io.ktor.server.http.content.*
-import io.ktor.server.plugins.calllogging.*
-import io.ktor.server.plugins.contentnegotiation.*
-import io.ktor.server.plugins.doublereceive.*
-import io.ktor.server.plugins.statuspages.*
-import io.ktor.server.plugins.swagger.*
-import io.ktor.server.request.*
-import io.ktor.server.resources.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
-import kotlinx.serialization.Serializable
+import com.zaxxer.hikari.HikariConfig
+import com.zaxxer.hikari.HikariDataSource
 import org.jetbrains.exposed.sql.*
-import org.koin.dsl.module
-import org.koin.ktor.plugin.Koin
-import org.koin.logger.slf4jLogger
-import org.slf4j.event.*
+import org.jetbrains.exposed.sql.transactions.transaction
 
-fun Application.configureDatabases() {
-    val database = Database.connect(
-        url = "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1",
-        user = "root",
-        driver = "org.h2.Driver",
-        password = "",
-    )
-    val userService = UserService(database)
-    routing {
-        // Create user
-        post("/users") {
-            val user = call.receive<ExposedUser>()
-            val id = userService.create(user)
-            call.respond(HttpStatusCode.Created, id)
-        }
+// Users 객체와 UserService 클래스가 같은 패키지 내에 있으므로 import가 필요 없습니다.
+// 만약 다른 패키지에 있다면, 파일 상단에 import com.fighting.UserService와 같은 코드가 필요합니다.
 
-        // Read user
-        get("/users/{id}") {
-            val id = call.parameters["id"]?.toInt() ?: throw IllegalArgumentException("Invalid ID")
-            val user = userService.read(id)
-            if (user != null) {
-                call.respond(HttpStatusCode.OK, user)
-            } else {
-                call.respond(HttpStatusCode.NotFound)
-            }
-        }
-
-        // Update user
-        put("/users/{id}") {
-            val id = call.parameters["id"]?.toInt() ?: throw IllegalArgumentException("Invalid ID")
-            val user = call.receive<ExposedUser>()
-            userService.update(id, user)
-            call.respond(HttpStatusCode.OK)
-        }
-
-        // Delete user
-        delete("/users/{id}") {
-            val id = call.parameters["id"]?.toInt() ?: throw IllegalArgumentException("Invalid ID")
-            userService.delete(id)
-            call.respond(HttpStatusCode.OK)
-        }
+fun Application.configureDatabases(): UserService {
+    val config = HikariConfig().apply {
+        driverClassName = "com.mysql.cj.jdbc.Driver"
+        jdbcUrl = "jdbc:mysql://localhost:3306/database_0"
+        username = "root"
+        password = "558agers1"
+        maximumPoolSize = 10
+        isAutoCommit = false
+        transactionIsolation = "TRANSACTION_REPEATABLE_READ"
+        validate()
     }
+    val dataSource = HikariDataSource(config)
+    val database = Database.connect(dataSource)
+
+    // ⭐⭐⭐ transaction 블록 수정 시작 ⭐⭐⭐
+    // 1. 컴파일 오류 해결: Unit 명시
+    // 2. 테이블 생성 오류 해결: 파일 이름(`Users.kt`) 대신 테이블 객체 이름(`Users`) 사용
+    transaction(database) {
+        addLogger(StdOutSqlLogger)
+
+        // Users 객체(UsersSchema.kt에 정의된)를 사용하여 테이블을 생성합니다.
+        SchemaUtils.create(Users)
+
+        // 컴파일 오류 방지 (Cannot infer type...)
+        Unit
+    }
+    // ⭐⭐⭐ transaction 블록 수정 완료 ⭐⭐⭐
+
+    return UserService(database)
 }
