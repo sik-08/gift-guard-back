@@ -1,3 +1,4 @@
+/*
 package com.fighting
 
 import io.ktor.http.*
@@ -81,4 +82,97 @@ fun Application.configureRouting(userService: UserService) {
 
 @Serializable
 @Resource("/articles")
-class Articles(val sort: String? = "new")
+class Articles(val sort: String? = "new")*/
+// Routing.kt
+
+package com.fighting
+
+import io.ktor.http.*
+import io.ktor.server.application.*
+import io.ktor.server.request.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
+import io.ktor.server.http.content.*
+
+fun Application.configureRouting(userService: UserService) {
+    // 라우팅 설정 시작 (플러그인 설치 코드는 모두 제거됨)
+    routing {
+
+        get("/") {
+            call.respondText("Hello World!")
+        }
+
+        staticResources("/static", "static")
+
+        // ⭐ 사용자(User) 관련 CRUD 라우팅
+        route("/users") {
+
+            // 👇👇👇 모든 사용자 조회 API 추가 👇👇👇
+            // GET /users
+            get {
+                val users = userService.readAll()
+                call.respond(HttpStatusCode.OK, users)
+            }
+
+            // POST /users
+            post {
+                val user = call.receive<ExposedUser>()
+                val id = userService.create(user)
+                call.respond(HttpStatusCode.Created, id)
+            }
+
+            // /users/{id} 경로 그룹
+            route("/{id}") {
+
+                // GET /users/{id}
+                get {
+                    val id = call.parameters["id"]?.toIntOrNull()
+                    if (id == null) {
+                        call.respond(HttpStatusCode.BadRequest, "ID parameter must be an integer.")
+                        return@get
+                    }
+
+                    val user = userService.read(id)
+                    if (user != null) {
+                        call.respond(HttpStatusCode.OK, user)
+                    } else {
+                        call.respond(HttpStatusCode.NotFound, "User with ID $id not found.")
+                    }
+                }
+
+                // PUT /users/{id}
+                put {
+                    val id = call.parameters["id"]?.toIntOrNull()
+                    if (id == null) {
+                        call.respond(HttpStatusCode.BadRequest, "ID parameter must be an integer.")
+                        return@put
+                    }
+
+                    val user = call.receive<ExposedUser>()
+                    val updatedRows = userService.update(id, user)
+                    if (updatedRows > 0) {
+                        call.respond(HttpStatusCode.OK)
+                    } else {
+                        call.respond(HttpStatusCode.NotFound, "User with ID $id not found.")
+                    }
+                }
+
+                // DELETE /users/{id}
+                delete {
+                    val id = call.parameters["id"]?.toIntOrNull()
+                    if (id == null) {
+                        call.respond(HttpStatusCode.BadRequest, "ID parameter must be an integer.")
+                        return@delete
+                    }
+
+                    val deletedRows = userService.delete(id)
+                    if (deletedRows > 0) {
+                        call.respond(HttpStatusCode.OK)
+                    } else {
+                        call.respond(HttpStatusCode.NotFound, "User with ID $id not found.")
+                    }
+                }
+            }
+        }
+    }
+}

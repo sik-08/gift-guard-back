@@ -12,9 +12,9 @@ import org.jetbrains.exposed.sql.transactions.transaction
 fun Application.configureDatabases(): UserService {
     val config = HikariConfig().apply {
         driverClassName = "com.mysql.cj.jdbc.Driver"
-        jdbcUrl = "jdbc:mysql://localhost:3306/database_0"
-        username = "root"
-        password = "558agers1"
+        jdbcUrl = "jdbc:mysql://localhost:3306/giftguard"
+        username = "giftuser"
+        password = "0000"
         maximumPoolSize = 10
         isAutoCommit = false
         transactionIsolation = "TRANSACTION_REPEATABLE_READ"

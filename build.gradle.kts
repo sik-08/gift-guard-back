@@ -39,6 +39,7 @@ dependencies {
     // Exposed 및 DB
     implementation("org.jetbrains.exposed:exposed-core:$exposed_version")
     implementation("org.jetbrains.exposed:exposed-jdbc:$exposed_version")
+    implementation("org.jetbrains.exposed:exposed-dao:$exposed_version")
     implementation("mysql:mysql-connector-java:8.0.28")
     implementation("com.zaxxer:HikariCP:5.0.1")
 
