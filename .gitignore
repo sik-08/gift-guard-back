@@ -121,10 +121,14 @@ $RECYCLE.BIN/
 *.lnk
 
 ### Gradle ###
-.gradle/
 gradle-app.setting
 .gradletasknamecache
 
 # Gradle Wrapper (must include)
 !/gradle/wrapper/gradle-wrapper.jar
 !/gradle/wrapper/gradle-wrapper.properties
+
+src/main/kotlin/com/fighting/plugins/Security.kt
+src/main/resources/service-account-key.json
+src/main/kotlin/com/fighting/services/FCMService.kt
+src/main/kotlin/com/fighting/services/AuthService.kt
