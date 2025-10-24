@@ -24,8 +24,8 @@ data class Gifticon(
 
 /**
  * 1. 기프티콘 생성/수정 요청 시 클라이언트로부터 받을 데이터 모델 (DTO)
- * - userId는 JWT 토큰에서 추출하므로 받지 않습니다.
- * - gifticonId, isUsed는 서버에서 관리하므로 받지 않습니다.
+ * - userId는 JWT 토큰에서 추출하므로 받지 않음
+ * - gifticonId, isUsed는 서버에서 관리하므로 받지 않
  */
 @Serializable
 data class GifticonRequest(

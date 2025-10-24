@@ -2,13 +2,12 @@ package com.fighting.routes
 
 import com.fighting.auth.GoogleAuthService
 import com.fighting.auth.JwtConfig
+import com.fighting.auth.getUserId
 import com.fighting.models.AuthResponse
 import com.fighting.models.GoogleLoginRequest
 import com.fighting.services.UserService
 import io.ktor.http.*
-import io.ktor.server.application.*
 import io.ktor.server.auth.*
-import io.ktor.server.auth.jwt.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -58,20 +57,13 @@ fun Route.userRoutes(userService: UserService) {
 
     authenticate("jwt-auth") {
         route("/api/v1/users") {
-
-            // JWT 토큰에서 userId를 추출하는 헬퍼 함수
-            fun getUserId(call: ApplicationCall): Int? {
-                val principal = call.principal<JWTPrincipal>()
-                return principal?.payload?.subject?.toIntOrNull()
-            }
-
             /**
              * GET /api/v1/users/me
              * 내 정보 조회
              * - Authorization 헤더의 JWT 토큰을 기반으로 사용자 식별
              */
             get("/me") {
-                val userId = getUserId(call)
+                val userId = call.getUserId()
                 if (userId == null) {
                     call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "Invalid token subject"))
                     return@get
@@ -91,10 +83,9 @@ fun Route.userRoutes(userService: UserService) {
              * DELETE /api/v1/users/me
              * 회원 탈퇴
              * - Authorization 헤더의 JWT 토큰을 기반으로 사용자 식별
-             * - (참고) 관련된 기프티콘 데이터도 함께 삭제하려면 UserService 수정 필요
              */
             delete("/me") {
-                val userId = getUserId(call)
+                val userId = call.getUserId()
                 if (userId == null) {
                     call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "Invalid token subject"))
                     return@delete

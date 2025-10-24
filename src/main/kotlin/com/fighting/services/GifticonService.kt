@@ -13,7 +13,7 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
  */
 class GifticonService {
 
-    /** ResultRow → Gifticon 매핑 함수 */
+    // ResultRow → Gifticon
     private fun rowToGifticon(row: ResultRow): Gifticon = Gifticon(
         gifticonId = row[GifticonTable.gifticonId],
         userId = row[GifticonTable.userId],

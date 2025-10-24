@@ -1,12 +1,11 @@
 package com.fighting.routes
 
+import com.fighting.auth.getUserId
 import com.fighting.models.Gifticon
 import com.fighting.models.GifticonRequest
 import com.fighting.services.GifticonService
 import io.ktor.http.*
-import io.ktor.server.application.*
 import io.ktor.server.auth.*
-import io.ktor.server.auth.jwt.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -14,16 +13,9 @@ import io.ktor.server.routing.*
 fun Route.gifticonRoutes(gifticonService: GifticonService) {
     authenticate("jwt-auth") {
         route("/api/v1/gifticons") {
-
-            // JWT에서 userId 추출
-            fun getUserId(call: ApplicationCall): Int? {
-                val principal = call.principal<JWTPrincipal>()
-                return principal?.payload?.subject?.toIntOrNull()
-            }
-
             // GET /: 내 기프티콘 목록 조회
             get {
-                val userId = getUserId(call)
+                val userId = call.getUserId()
                 if (userId == null) {
                     call.respond(HttpStatusCode.Unauthorized)
                     return@get
@@ -35,7 +27,7 @@ fun Route.gifticonRoutes(gifticonService: GifticonService) {
 
             // POST /: 새 기프티콘 등록
             post {
-                val userId = getUserId(call)
+                val userId = call.getUserId()
                 if (userId == null) {
                     call.respond(HttpStatusCode.Unauthorized)
                     return@post
@@ -59,7 +51,7 @@ fun Route.gifticonRoutes(gifticonService: GifticonService) {
             route("/{id}") {
                 // GET /{id}: 내 기프티콘 상세 조회
                 get {
-                    val userId = getUserId(call)
+                    val userId = call.getUserId()
                     val gifticonId = call.parameters["id"]?.toIntOrNull()
                     if (userId == null || gifticonId == null) {
                         call.respond(HttpStatusCode.BadRequest)
@@ -68,7 +60,7 @@ fun Route.gifticonRoutes(gifticonService: GifticonService) {
 
                     val gifticon = gifticonService.getGifticonById(gifticonId)
 
-                    // (보안) 토큰의 userId와 기프티콘의 소유자(userId)가 일치하는지 확인
+                    // 토큰의 userId와 기프티콘의 소유자(userId)가 일치하는지 확인
                     if (gifticon == null || gifticon.userId != userId) {
                         call.respond(HttpStatusCode.NotFound, mapOf("error" to "Gifticon not found or access denied"))
                         return@get
@@ -79,7 +71,7 @@ fun Route.gifticonRoutes(gifticonService: GifticonService) {
 
                 // PUT /{id}: 내 기프티콘 수정 (사용 여부 변경 등)
                 put {
-                    val userId = getUserId(call)
+                    val userId = call.getUserId()
                     val gifticonId = call.parameters["id"]?.toIntOrNull()
                     if (userId == null || gifticonId == null) {
                         call.respond(HttpStatusCode.BadRequest)
@@ -88,7 +80,7 @@ fun Route.gifticonRoutes(gifticonService: GifticonService) {
 
                     val request = call.receive<GifticonRequest>()
 
-                    // (보안) 수정 전 소유권 확인
+                    // 수정 전 소유권 확인
                     val existing = gifticonService.getGifticonById(gifticonId)
                     if (existing == null || existing.userId != userId) {
                         call.respond(HttpStatusCode.NotFound, mapOf("error" to "Gifticon not found or access denied"))
@@ -111,14 +103,14 @@ fun Route.gifticonRoutes(gifticonService: GifticonService) {
 
                 // DELETE /{id}: 내 기프티콘 삭제
                 delete {
-                    val userId = getUserId(call)
+                    val userId = call.getUserId()
                     val gifticonId = call.parameters["id"]?.toIntOrNull()
                     if (userId == null || gifticonId == null) {
                         call.respond(HttpStatusCode.BadRequest)
                         return@delete
                     }
 
-                    // (보안) 삭제 전 소유권 확인
+                    // 삭제 전 소유권 확인
                     val existing = gifticonService.getGifticonById(gifticonId)
                     if (existing == null || existing.userId != userId) {
                         call.respond(HttpStatusCode.NotFound, mapOf("error" to "Gifticon not found or access denied"))

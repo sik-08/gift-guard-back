@@ -45,7 +45,6 @@ class UserService {
         val existing = UserTable.select(UserTable.googleId eq googleId).singleOrNull()
 
         if (existing == null) {
-            // insertAndGetId 대신 resultedValues로 새 User 반환
             val inserted = UserTable.insert {
                 it[UserTable.googleId] = googleId
                 it[UserTable.email] = email

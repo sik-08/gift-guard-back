@@ -6,11 +6,9 @@ import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.json.gson.GsonFactory
 
 /*
- * Google ID Token을 검증합니다. 클라이언트(앱/웹)는 Google Sign-In 후
- * 서버에 idToken을 POST 합니다. 서버는 이 파일의 verifyIdToken으로 검증합니다.
- *
- * 필요한 환경변수:
- * - GOOGLE_CLIENT_ID : 클라이언트(앱/웹)용 OAuth 2.0 Client ID (또는 여러개면 CSV로 관리)
+ * Google ID Token을 검증, 클라이언트는 Google Sign-In 후
+ * 서버에 idToken을 POST
+ * 서버는 이 파일의 verifyIdToken으로 검증
  */
 
 object GoogleAuthService {
