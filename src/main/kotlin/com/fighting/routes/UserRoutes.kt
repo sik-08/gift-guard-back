@@ -14,19 +14,6 @@ import io.ktor.server.routing.*
 
 fun Route.userRoutes(userService: UserService) {
     route("/api/v1/auth") {
-        /**
-         * POST /api/v1/auth/google
-         * 구글 로그인 및 자동 회원가입
-         * - 클라이언트에서 받은 Google ID Token 검증
-         * - DB에 사용자가 없으면 생성, 있으면 정보 업데이트
-         * - 서버 자체 JWT 토큰 발급
-         */
-
-        get("/") {
-            val users = userService.getAllUsers()
-            call.respond(HttpStatusCode.OK, users)
-        }
-
         post("/google") {
             try {
                 val request = call.receive<GoogleLoginRequest>()
@@ -50,6 +37,7 @@ fun Route.userRoutes(userService: UserService) {
 
             } catch (e: Exception) {
                 // SerializationException (잘못된 JSON 요청)
+                e.printStackTrace()
                 call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Invalid request: ${e.message}"))
             }
         }

@@ -4,6 +4,8 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier
 import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.json.gson.GsonFactory
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /*
  * Google ID Token을 검증, 클라이언트는 Google Sign-In 후
@@ -28,19 +30,22 @@ object GoogleAuthService {
      * 정상이라면 사용자 식별자(googleId), email, name을 반환
      * 실패 시 null 반환
      */
-    fun verifyIdToken(idTokenString: String): VerifiedPayload? {
-        val idToken: GoogleIdToken? = try {
-            verifier.verify(idTokenString)
-        } catch (e: Exception) {
-            null
-        }
-        return idToken?.payload?.let { payload ->
-            val googleId = payload.subject
-            val email = payload.email
-            val name = payload["name"] as? String
-            if (googleId != null && email != null) {
-                VerifiedPayload(googleId, email, name)
-            } else null
+    suspend fun verifyIdToken(idTokenString: String): VerifiedPayload? {
+        return withContext(Dispatchers.IO) {
+            val idToken: GoogleIdToken? = try {
+                verifier.verify(idTokenString)
+            } catch (e: Exception) {
+                null
+            }
+
+            idToken?.payload?.let { payload ->
+                val googleId = payload.subject
+                val email = payload.email
+                val name = payload["name"] as? String
+                if (googleId != null && email != null) {
+                    VerifiedPayload(googleId, email, name)
+                } else null
+            }
         }
     }
 }

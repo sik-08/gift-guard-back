@@ -35,6 +35,7 @@ object DatabaseFactory {
 
         transaction(database) {
             addLogger(StdOutSqlLogger)
+            SchemaUtils.drop(GifticonTable, UserTable)
             SchemaUtils.create(UserTable, GifticonTable)
         }
     }
