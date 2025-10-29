@@ -2,7 +2,6 @@ package com.fighting.plugins
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
-import com.fighting.auth.JwtConfig
 import io.ktor.client.HttpClient
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.*
@@ -51,12 +50,12 @@ fun Application.configureJWTAuthentication(httpClient: HttpClient) {
     }
 }
 
-fun makeToken(userId: Int, email: String): String {
+fun makeToken(userId: String, email: String): String {
     val now = System.currentTimeMillis()
     return JWT.create()
         .withIssuer(issuer)
         .withAudience(audience)
-        .withSubject(userId.toString())
+        .withSubject(userId)
         .withClaim("email", email)
         .withIssuedAt(Date(now))
         .withExpiresAt(Date(now + validityInMs))

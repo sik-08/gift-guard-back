@@ -32,12 +32,12 @@ class UserService {
     }
 
     // 구글 ID로 사용자 조회
-    suspend fun findByGoogleId(googleId: String): User? = dbQuery {
-        UserTable.select(UserTable.googleId eq googleId).map(::rowToUser).singleOrNull()
+    suspend fun findByEmail(email: String): User? = dbQuery {
+        UserTable.select(UserTable.email eq email).map(::rowToUser).singleOrNull()
     }
 
     // 구글 로그인 기반 사용자 생성 또는 갱신
-    suspend fun createOrUpdateFromGoogle(
+    suspend fun createOrUpdateUser(
         googleId: String,
         email: String,
         name: String?

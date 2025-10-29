@@ -1,93 +1,55 @@
 package com.fighting.routes
 
-import com.fighting.auth.GoogleAuthService
-import com.fighting.auth.JwtConfig
-import com.fighting.auth.getUserId
 import com.fighting.models.AuthResponse
-import com.fighting.models.GoogleLoginRequest
-import com.fighting.services.UserService
+import io.ktor.client.*
 import io.ktor.http.*
+import io.ktor.server.application.*
 import io.ktor.server.auth.*
+import com.fighting.services.UserService
+import io.ktor.client.HttpClient
+import com.fighting.plugins.*
+import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 
-fun Route.userRoutes(userService: UserService) {
-    route("/api/v1/auth") {
-        post("/google") {
-            try {
-                val request = call.receive<GoogleLoginRequest>()
-                val payload = GoogleAuthService.verifyIdToken(request.idToken)
+fun Route.userRoutes(userService: UserService, httpClient: HttpClient) {
+    authenticate("google-oauth"){
+        get("login"){
+            // 구글 로그인 페이지로 리디렉션
+        }
 
-                if (payload == null) {
-                    call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "Invalid Google ID Token"))
-                    return@post
-                }
+        get("callback"){
+            val principal:OAuthAccessTokenResponse.OAuth2? = call.principal()
+            if (principal == null){
+                call.respondText("OAUTH failed", status = HttpStatusCode.Unauthorized)
+                return@get
+            }
+            val accessToken = principal.accessToken
+            val userInfo = fetchGoogleUserInfo(httpClient = httpClient, accessToken = accessToken)
 
-                val user = userService.createOrUpdateFromGoogle(
-                    googleId = payload.googleId,
-                    email = payload.email,
-                    name = payload.name
-                )
-
-                // user.userId가 null이 아님을 확신 (DB에서 생성/조회했으므로)
-                val appToken = JwtConfig.makeToken(user.userId!!, user.email)
-
-                call.respond(HttpStatusCode.OK, AuthResponse(token = appToken))
-
-            } catch (e: Exception) {
-                // SerializationException (잘못된 JSON 요청)
-                e.printStackTrace()
-                call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Invalid request: ${e.message}"))
+            if (userInfo != null){
+                userService.createOrUpdateUser(userInfo.userId, userInfo.email, userInfo.name)
+                val token = makeToken(userInfo.userId, userInfo.email)
+                call.respond(AuthResponse(token))
+            }else{
+                call.respond(HttpStatusCode.InternalServerError)
             }
         }
-    }
 
-    authenticate("jwt-auth") {
-        route("/api/v1/users") {
-            /**
-             * GET /api/v1/users/me
-             * 내 정보 조회
-             * - Authorization 헤더의 JWT 토큰을 기반으로 사용자 식별
-             */
-            get("/me") {
-                val userId = call.getUserId()
-                if (userId == null) {
-                    call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "Invalid token subject"))
-                    return@get
-                }
-
-                val user = userService.getUserById(userId)
+        authenticate("jwt-auth") {
+            get(""){
+                val principal = call.principal<JWTPrincipal>()
+                val email = principal?.payload?.getClaim("email")?.asString()
+                val user = email?.let { userService.findByEmail(it) }
 
                 if (user == null) {
-                    // 토큰은 유효하지만 DB에 유저가 없는 경우 (탈퇴 직후)
                     call.respond(HttpStatusCode.NotFound, mapOf("error" to "User not found"))
                 } else {
                     call.respond(HttpStatusCode.OK, user)
                 }
             }
-
-            /**
-             * DELETE /api/v1/users/me
-             * 회원 탈퇴
-             * - Authorization 헤더의 JWT 토큰을 기반으로 사용자 식별
-             */
-            delete("/me") {
-                val userId = call.getUserId()
-                if (userId == null) {
-                    call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "Invalid token subject"))
-                    return@delete
-                }
-
-                val success = userService.deleteUser(userId)
-
-                if (success) {
-                    call.respond(HttpStatusCode.OK, mapOf("message" to "User deleted successfully"))
-                } else {
-                    // DB 삭제 실패 (e.g., 존재하지 않는 userI)
-                    call.respond(HttpStatusCode.NotFound, mapOf("error" to "User not found or delete failed"))
-                }
-            }
         }
+
     }
 }

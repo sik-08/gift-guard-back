@@ -11,7 +11,7 @@ import java.util.UUID
 
 fun AuthenticationConfig.configureGoogleOAuth(httpClient: HttpClient){
     oauth("google-oauth"){
-        urlProvider = { "http://localhost:8080/callback"}
+        urlProvider = { "https://unijugate-unaccessible-lorean.ngrok-free.dev/callback"}
         providerLookup = {
             OAuthServerSettings.OAuth2ServerSettings(
                 name = "google",
@@ -32,7 +32,6 @@ fun AuthenticationConfig.configureGoogleOAuth(httpClient: HttpClient){
     }
 }
 
-
 @Serializable
 data class UserInfo(
     val userId:String = UUID.randomUUID().toString(),
@@ -40,17 +39,13 @@ data class UserInfo(
     val email:String
 )
 
-
 @Serializable
 data class GoogleUserResponse(
     val name:String,
     val email:String
 )
 
-
-
-suspend fun fetchGoogleUserInfo(httpClient: HttpClient,accessToken:String) : UserInfo? {
-
+suspend fun fetchGoogleUserInfo(httpClient: HttpClient, accessToken: String) : UserInfo? {
     val response : HttpResponse = httpClient
         .get("https://www.googleapis.com/oauth2/v2/userinfo"){
             headers{
@@ -65,6 +60,4 @@ suspend fun fetchGoogleUserInfo(httpClient: HttpClient,accessToken:String) : Use
     else {
         null
     }
-
-
 }
